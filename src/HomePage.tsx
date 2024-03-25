@@ -6,9 +6,10 @@ import {
   TeamOutlined,
   UserOutlined,
   HomeOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Breadcrumb, Layout, Menu, theme } from 'antd';
+import { Breadcrumb, Button, Layout, Menu, Modal, Table, theme } from 'antd';
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -35,9 +36,41 @@ export const HomePage: React.FC = () => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+  const dataSource = [
+    {
+      key: '1',
+      name: 'Mike',
+      age: 32,
+      address: '10 Downing Street',
+    },
+    {
+      key: '2',
+      name: 'John',
+      age: 42,
+      address: '10 Downing Street',
+    },
+  ];
 
+  const columns = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Age',
+      dataIndex: 'age',
+      key: 'age',
+    },
+    {
+      title: 'Address',
+      dataIndex: 'address',
+      key: 'address',
+    },
+  ];
   return (
     <Layout style={{ minHeight: '100vh' }}>
+      {/* <Modal open /> */}
       <Sider
         collapsible
         collapsed={collapsed}
@@ -54,6 +87,14 @@ export const HomePage: React.FC = () => {
       <Layout>
         <Header style={{ padding: 0, background: colorBgContainer }} />
         <Content style={{ margin: '0 16px' }}>
+          <Button
+            style={{
+              margin: 15,
+            }}
+            icon={<MailOutlined />}
+          >
+            New Email
+          </Button>
           <div
             style={{
               padding: 24,
@@ -62,7 +103,7 @@ export const HomePage: React.FC = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-            HomePage
+            <Table dataSource={dataSource} columns={columns} />
           </div>
         </Content>
         <Footer style={{ textAlign: 'center' }}>
