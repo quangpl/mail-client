@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DesktopOutlined,
   FileOutlined,
@@ -7,12 +7,27 @@ import {
   UserOutlined,
   HomeOutlined,
   MailOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Breadcrumb, Button, Layout, Menu, Modal, Table, theme } from 'antd';
+import {
+  Breadcrumb,
+  Button,
+  Form,
+  Input,
+  Layout,
+  Menu,
+  Modal,
+  Table,
+  Upload,
+  theme,
+} from 'antd';
+import { getAuth, sendMail } from './core';
+import { useHistory } from 'react-router';
 
 const { Header, Content, Footer, Sider } = Layout;
-
+const { TextArea } = Input;
+const { Dragger } = Upload;
 type MenuItem = Required<MenuProps>['items'][number];
 
 function getItem(
@@ -32,10 +47,21 @@ function getItem(
 const items: MenuItem[] = [getItem('Home', 'home', <HomeOutlined />)];
 
 export const HomePage: React.FC = () => {
+  const navigate = useHistory();
+  const [showEmail, setShowEmail] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  useEffect(() => {
+    (async () => {
+      const auth = await getAuth();
+      if (!auth) {
+        navigate.push('/');
+      }
+    })();
+  }, []);
   const dataSource = [
     {
       key: '1',
@@ -68,9 +94,112 @@ export const HomePage: React.FC = () => {
       key: 'address',
     },
   ];
+  const onFinish = (values: any) => {
+    const res = {
+      ...values,
+      files: values.files.fileList?.map((file: any) => file.originFileObj),
+    };
+    console.log(values);
+    console.log(res);
+    // console.log(res);
+    sendMail(res);
+  };
+
+  const normFile = (e: any) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e && e.fileList;
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* <Modal open /> */}
+      <Modal
+        open={showEmail}
+        onCancel={() => {
+          setShowEmail(false);
+        }}
+      >
+        <Form
+          name='emailForm'
+          labelCol={{
+            span: 4,
+          }}
+          wrapperCol={{
+            span: 23,
+          }}
+          onFinish={onFinish}
+        >
+          <Form.Item
+            name='to'
+            label='To'
+            rules={[
+              {
+                required: true,
+                message: 'Please input recipient email!',
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name='from'
+            label='From'
+            rules={[
+              {
+                required: true,
+                message: 'Please input sender email!',
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name='subject'
+            label='Subject'
+            rules={[
+              {
+                required: true,
+                message: 'Please input subject!',
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name='sender'
+            label='Sender'
+            rules={[
+              {
+                required: true,
+                message: 'Please input sender name!',
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name='text' label='Text'>
+            <TextArea rows={4} />
+          </Form.Item>
+          <Form.Item name='files' label='Files'>
+            <Dragger name='files' multiple={true}>
+              <p className='ant-upload-text'>
+                Click or drag file to this area to upload
+              </p>
+            </Dragger>
+          </Form.Item>
+          <Form.Item
+            wrapperCol={{
+              offset: 4,
+              span: 14,
+            }}
+          >
+            <Button type='primary' htmlType='submit'>
+              Send
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
       <Sider
         collapsible
         collapsed={collapsed}
@@ -90,6 +219,9 @@ export const HomePage: React.FC = () => {
           <Button
             style={{
               margin: 15,
+            }}
+            onClick={() => {
+              setShowEmail(true);
             }}
             icon={<MailOutlined />}
           >
