@@ -1,17 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { HomeOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons';
+import { MenuProps, Tag } from 'antd';
 import {
-  DesktopOutlined,
-  FileOutlined,
-  PieChartOutlined,
-  TeamOutlined,
-  UserOutlined,
-  HomeOutlined,
-  MailOutlined,
-  InboxOutlined,
-} from '@ant-design/icons';
-import type { MenuProps } from 'antd';
-import {
-  Breadcrumb,
   Button,
   Form,
   Input,
@@ -22,8 +12,9 @@ import {
   Upload,
   theme,
 } from 'antd';
-import { getAuth, sendMail } from './core';
+import { getAuth, getMails, sendMail } from './core';
 import { useHistory } from 'react-router';
+import * as XLSX from 'xlsx';
 
 const { Header, Content, Footer, Sider } = Layout;
 const { TextArea } = Input;
@@ -48,70 +39,101 @@ const items: MenuItem[] = [getItem('Home', 'home', <HomeOutlined />)];
 
 export const HomePage: React.FC = () => {
   const navigate = useHistory();
+  const [loading, setLoading] = useState(false);
+  const [emails, setEmails] = useState([]);
+  const [toValue, setTovalue] = useState<any[]>([]);
   const [showEmail, setShowEmail] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-
+  const fetchMails = async () => {
+    setLoading(true);
+    try {
+      const res = await getMails();
+      setEmails(res);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     (async () => {
       const auth = await getAuth();
       if (!auth) {
         navigate.push('/');
       }
+      await fetchMails();
     })();
   }, []);
-  const dataSource = [
-    {
-      key: '1',
-      name: 'Mike',
-      age: 32,
-      address: '10 Downing Street',
-    },
-    {
-      key: '2',
-      name: 'John',
-      age: 42,
-      address: '10 Downing Street',
-    },
-  ];
 
   const columns = [
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'To',
+      dataIndex: 'to',
+      key: 'to',
     },
     {
-      title: 'Age',
-      dataIndex: 'age',
-      key: 'age',
+      title: 'From',
+      dataIndex: 'from',
+      key: 'from',
     },
     {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
+      title: 'Sender',
+      dataIndex: 'sender',
+      key: 'sender',
+    },
+    {
+      title: 'Subject',
+      dataIndex: 'subject',
+      key: 'subject',
+    },
+    {
+      title: 'Time',
+      dataIndex: 'time',
+      render: (col: any, val: number) => {
+        console.log(col);
+        return <span>{new Date(col).toLocaleString()}</span>;
+      },
     },
   ];
   const onFinish = (values: any) => {
+    values.to_files = undefined;
     const res = {
       ...values,
-      files: values.files.fileList?.map((file: any) => file.originFileObj),
+      files: values.files?.fileList?.map((file: any) => file.originFileObj),
     };
-    console.log(values);
+    if (toValue?.length) {
+      res.to = toValue;
+    }
     console.log(res);
+
     // console.log(res);
     sendMail(res);
+    setShowEmail(false);
+    fetchMails();
   };
+  const handleUpload = (e: any) => {
+    e.preventDefault();
 
-  const normFile = (e: any) => {
-    if (Array.isArray(e)) {
-      return e;
-    }
-    return e && e.fileList;
+    var files = e.target.files,
+      f = files[0];
+    var reader = new FileReader();
+    reader.onload = function (e: any) {
+      var data = e.target.result;
+      let readedData = XLSX.read(data, { type: 'binary' });
+      const wsname = readedData.SheetNames[0];
+      const ws = readedData.Sheets[wsname];
+
+      /* Convert array to json*/
+      const dataParse = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      console.log(dataParse);
+      const values = dataParse.map((row: any) => {
+        return row[1];
+      });
+      setTovalue(values);
+    };
+    reader.readAsBinaryString(f);
   };
-
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Modal
@@ -135,12 +157,48 @@ export const HomePage: React.FC = () => {
             label='To'
             rules={[
               {
-                required: true,
                 message: 'Please input recipient email!',
               },
             ]}
           >
-            <Input />
+            {toValue?.length ? (
+              <Tag>{toValue.length} selected emails</Tag>
+            ) : (
+              <Input />
+            )}
+          </Form.Item>
+          <Form.Item
+            name='to_files'
+            label='To(Files)'
+            rules={[
+              {
+                required: false,
+              },
+            ]}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                alignContent: 'center',
+                flexDirection: 'row',
+                marginTop: 20,
+              }}
+            >
+              <input type='file' onChange={handleUpload}></input>
+              {toValue?.length ? (
+                <Button
+                  onClick={() => {
+                    setTovalue([]);
+                  }}
+                >
+                  Remove file
+                </Button>
+              ) : (
+                ''
+              )}
+            </div>
           </Form.Item>
           <Form.Item
             name='from'
@@ -154,6 +212,7 @@ export const HomePage: React.FC = () => {
           >
             <Input />
           </Form.Item>
+
           <Form.Item
             name='subject'
             label='Subject'
@@ -235,7 +294,11 @@ export const HomePage: React.FC = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-            <Table dataSource={dataSource} columns={columns} />
+            <Table
+              loading={loading}
+              dataSource={emails}
+              columns={columns as any}
+            />
           </div>
         </Content>
         <Footer style={{ textAlign: 'center' }}>
