@@ -97,7 +97,7 @@ export const HomePage: React.FC = () => {
       },
     },
   ];
-  const onFinish = (values: any) => {
+  const onFinish = async (values: any) => {
     try {
       setSending(true);
       values.to_files = undefined;
@@ -111,7 +111,7 @@ export const HomePage: React.FC = () => {
       console.log(res);
 
       // console.log(res);
-      sendMail(res);
+      await sendMail(res);
       setShowEmail(false);
       fetchMails();
     } finally {
