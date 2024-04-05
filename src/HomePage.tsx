@@ -112,8 +112,8 @@ export const HomePage: React.FC = () => {
 
       // console.log(res);
       await sendMail(res);
+      await fetchMails();
       setShowEmail(false);
-      fetchMails();
     } finally {
       setSending(false);
     }
