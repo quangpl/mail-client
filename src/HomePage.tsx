@@ -39,6 +39,7 @@ const items: MenuItem[] = [getItem('Home', 'home', <HomeOutlined />)];
 
 export const HomePage: React.FC = () => {
   const navigate = useHistory();
+  const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emails, setEmails] = useState([]);
   const [toValue, setTovalue] = useState<any[]>([]);
@@ -60,7 +61,7 @@ export const HomePage: React.FC = () => {
     (async () => {
       const auth = await getAuth();
       if (!auth) {
-        navigate.push('/');
+        navigate.push('/login');
       }
       await fetchMails();
     })();
@@ -97,20 +98,25 @@ export const HomePage: React.FC = () => {
     },
   ];
   const onFinish = (values: any) => {
-    values.to_files = undefined;
-    const res = {
-      ...values,
-      files: values.files?.fileList?.map((file: any) => file.originFileObj),
-    };
-    if (toValue?.length) {
-      res.to = toValue;
-    }
-    console.log(res);
+    try {
+      setSending(true);
+      values.to_files = undefined;
+      const res = {
+        ...values,
+        files: values.files?.fileList?.map((file: any) => file.originFileObj),
+      };
+      if (toValue?.length) {
+        res.to = toValue;
+      }
+      console.log(res);
 
-    // console.log(res);
-    sendMail(res);
-    setShowEmail(false);
-    fetchMails();
+      // console.log(res);
+      sendMail(res);
+      setShowEmail(false);
+      fetchMails();
+    } finally {
+      setSending(false);
+    }
   };
   const handleUpload = (e: any) => {
     e.preventDefault();
@@ -137,6 +143,7 @@ export const HomePage: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Modal
+        footer={null}
         open={showEmail}
         onCancel={() => {
           setShowEmail(false);
@@ -253,7 +260,7 @@ export const HomePage: React.FC = () => {
               span: 14,
             }}
           >
-            <Button type='primary' htmlType='submit'>
+            <Button loading={sending} type='primary' htmlType='submit'>
               Send
             </Button>
           </Form.Item>

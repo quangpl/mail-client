@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const endpoint = process.env.REACT_APP_API || 'https://api.example.com';
+const endpoint =
+  process.env.REACT_APP_API || 'https://mail-server.reviewyte.net';
 export const httpClient = axios.create({
   headers: {
     token: localStorage.getItem('token'),
