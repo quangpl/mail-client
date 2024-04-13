@@ -107,7 +107,6 @@ export const HomePage: React.FC = () => {
       title: 'Time',
       dataIndex: 'time',
       render: (col: any, val: number) => {
-        console.log(col);
         return <span>{new Date(col).toLocaleString()}</span>;
       },
     },
@@ -136,14 +135,10 @@ export const HomePage: React.FC = () => {
     var reader = new FileReader();
     reader.onload = function (e: any) {
       var data = e.target.result;
-      console.log(data);
       let readedData = XLSX.read(data, { type: 'binary' });
       const wsname = readedData.SheetNames[0];
       const ws = readedData.Sheets[wsname];
-
-      /* Convert array to json*/
       const dataParse = XLSX.utils.sheet_to_json(ws, { header: 1 });
-      console.log(dataParse);
       const values = dataParse.map((row: any) => {
         return row[0];
       });
@@ -154,6 +149,7 @@ export const HomePage: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Modal
+        title='Send new email'
         width={'70%'}
         footer={null}
         open={showEmail}
@@ -165,10 +161,10 @@ export const HomePage: React.FC = () => {
           form={form}
           name='emailForm'
           labelCol={{
-            span: 4,
+            span: 24,
           }}
           wrapperCol={{
-            span: 23,
+            span: 24,
           }}
           onFinish={onFinish}
         >
@@ -188,11 +184,15 @@ export const HomePage: React.FC = () => {
                   onChange={(e) => {
                     setTovalue(e.target.value);
                   }}
+                  allowClear
                   rows={10}
                 />
               </Col>
               <Col span={1}>
                 <Upload
+                  onRemove={() => {
+                    setTovalue('');
+                  }}
                   multiple={false}
                   onChange={(e) => {
                     handleUpload(e.file.originFileObj);
@@ -274,7 +274,7 @@ export const HomePage: React.FC = () => {
             <Input />
           </Form.Item> */}
           <Form.Item name='text' label='Text'>
-            <TextArea rows={4} />
+            <TextArea rows={4} allowClear />
           </Form.Item>
           <Form.Item
             name='html'
@@ -291,6 +291,7 @@ export const HomePage: React.FC = () => {
               <Col span={22}>
                 {' '}
                 <TextArea
+                  allowClear
                   value={html}
                   rows={9}
                   onChange={(e) => {
@@ -301,6 +302,9 @@ export const HomePage: React.FC = () => {
               <Col span={1}>
                 {' '}
                 <Upload
+                  onRemove={() => {
+                    setHtml('');
+                  }}
                   multiple={false}
                   onChange={async (e) => {
                     const res: any = await handleFileRead(e.file.originFileObj);
