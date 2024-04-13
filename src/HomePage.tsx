@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { HomeOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons';
-import { Col, MenuProps, Popover, Row, Tag } from 'antd';
+import { Col, MenuProps, Popover, Row } from 'antd';
 import {
   Button,
   Form,
@@ -302,6 +302,7 @@ export const HomePage: React.FC = () => {
               <Col span={1}>
                 {' '}
                 <Upload
+                  accept='.html'
                   onRemove={() => {
                     setHtml('');
                   }}
