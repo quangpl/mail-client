@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { HomeOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons';
-import { MenuProps, Tag } from 'antd';
+import { Col, MenuProps, Popover, Row, Tag } from 'antd';
 import {
   Button,
   Form,
@@ -15,7 +15,7 @@ import {
 import { getAuth, getMails, sendMail } from './core';
 import { useHistory } from 'react-router';
 import * as XLSX from 'xlsx';
-
+import MailIcon from './mail.png';
 const { Header, Content, Footer, Sider } = Layout;
 const { TextArea } = Input;
 const { Dragger } = Upload;
@@ -45,6 +45,10 @@ export const HomePage: React.FC = () => {
   const [toValue, setTovalue] = useState<any[]>([]);
   const [showEmail, setShowEmail] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [user, setUser] = useState({} as any);
+  const [html, setHtml] = useState('');
+  const [form] = Form.useForm(); // Create a form instance
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -63,9 +67,20 @@ export const HomePage: React.FC = () => {
       if (!auth) {
         navigate.push('/login');
       }
+      setUser(auth);
       await fetchMails();
     })();
   }, []);
+
+  const handleFileRead = async (file: any) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event: any) => {
+        resolve(event.target?.result);
+      };
+      reader.readAsText(file);
+    });
+  };
 
   const columns = [
     {
@@ -104,15 +119,15 @@ export const HomePage: React.FC = () => {
       const res = {
         ...values,
         files: values.files?.fileList?.map((file: any) => file.originFileObj),
+        html,
       };
       if (toValue?.length) {
         res.to = toValue;
       }
-      console.log(res);
-
       // console.log(res);
       await sendMail(res);
       await fetchMails();
+      form?.resetFields();
       setShowEmail(false);
     } finally {
       setSending(false);
@@ -143,6 +158,7 @@ export const HomePage: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Modal
+        width={'70%'}
         footer={null}
         open={showEmail}
         onCancel={() => {
@@ -150,6 +166,7 @@ export const HomePage: React.FC = () => {
         }}
       >
         <Form
+          form={form}
           name='emailForm'
           labelCol={{
             span: 4,
@@ -247,6 +264,42 @@ export const HomePage: React.FC = () => {
           <Form.Item name='text' label='Text'>
             <TextArea rows={4} />
           </Form.Item>
+          <Form.Item
+            name='upload'
+            label='HTML'
+            valuePropName='fileList'
+            getValueFromEvent={(e) => {
+              if (Array.isArray(e)) {
+                return e;
+              }
+              return e && e.fileList;
+            }}
+          >
+            <Row gutter={[10, 10]} align={'middle'}>
+              <Col span={22}>
+                {' '}
+                <TextArea
+                  value={html}
+                  rows={9}
+                  onChange={(e) => {
+                    setHtml(e.target.value);
+                  }}
+                />
+              </Col>
+              <Col span={1}>
+                {' '}
+                <Upload
+                  multiple={false}
+                  onChange={async (e) => {
+                    const res: any = await handleFileRead(e.file.originFileObj);
+                    setHtml(res);
+                  }}
+                >
+                  <Button icon={<UploadOutlined />}></Button>
+                </Upload>
+              </Col>
+            </Row>
+          </Form.Item>
           <Form.Item name='files' label='Files'>
             <Dragger name='files' multiple={true}>
               <p className='ant-upload-text'>
@@ -280,7 +333,39 @@ export const HomePage: React.FC = () => {
         />
       </Sider>
       <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }} />
+        <Header
+          style={{
+            padding: 0,
+            background: colorBgContainer,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            alignContent: 'center',
+          }}
+        >
+          <img src={MailIcon} style={{ width: 40, height: 40, margin: 10 }} />
+          <Popover
+            content={
+              <Button
+                onClick={() => {
+                  localStorage.clear();
+                  navigate.push('/login');
+                }}
+              >
+                Logout
+              </Button>
+            }
+          >
+            <b
+              style={{
+                margin: 10,
+              }}
+            >
+              {' '}
+              {user.username ? user.username : ''}
+            </b>
+          </Popover>
+        </Header>
         <Content style={{ margin: '0 16px' }}>
           <Button
             style={{
