@@ -42,7 +42,7 @@ export const HomePage: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [emails, setEmails] = useState([]);
-  const [toValue, setTovalue] = useState<any[]>([]);
+  const [toValue, setTovalue] = useState('');
   const [showEmail, setShowEmail] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState({} as any);
@@ -122,9 +122,8 @@ export const HomePage: React.FC = () => {
         html,
       };
       if (toValue?.length) {
-        res.to = toValue;
+        res.to = toValue.split(',\n');
       }
-      // console.log(res);
       await sendMail(res);
       await fetchMails();
       form?.resetFields();
@@ -133,14 +132,11 @@ export const HomePage: React.FC = () => {
       setSending(false);
     }
   };
-  const handleUpload = (e: any) => {
-    e.preventDefault();
-
-    var files = e.target.files,
-      f = files[0];
+  const handleUpload = (file: any) => {
     var reader = new FileReader();
     reader.onload = function (e: any) {
       var data = e.target.result;
+      console.log(data);
       let readedData = XLSX.read(data, { type: 'binary' });
       const wsname = readedData.SheetNames[0];
       const ws = readedData.Sheets[wsname];
@@ -149,11 +145,11 @@ export const HomePage: React.FC = () => {
       const dataParse = XLSX.utils.sheet_to_json(ws, { header: 1 });
       console.log(dataParse);
       const values = dataParse.map((row: any) => {
-        return row[1];
+        return row[0];
       });
-      setTovalue(values);
+      setTovalue(values.join(',\n'));
     };
-    reader.readAsBinaryString(f);
+    reader.readAsBinaryString(file);
   };
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -185,13 +181,29 @@ export const HomePage: React.FC = () => {
               },
             ]}
           >
-            {toValue?.length ? (
-              <Tag>{toValue.length} selected emails</Tag>
-            ) : (
-              <Input />
-            )}
+            <Row gutter={[10, 10]} align={'middle'}>
+              <Col span={22}>
+                <TextArea
+                  value={toValue}
+                  onChange={(e) => {
+                    setTovalue(e.target.value);
+                  }}
+                  rows={10}
+                />
+              </Col>
+              <Col span={1}>
+                <Upload
+                  multiple={false}
+                  onChange={(e) => {
+                    handleUpload(e.file.originFileObj);
+                  }}
+                >
+                  <Button icon={<UploadOutlined />}></Button>
+                </Upload>
+              </Col>
+            </Row>
           </Form.Item>
-          <Form.Item
+          {/* <Form.Item
             name='to_files'
             label='To(Files)'
             rules={[
@@ -223,7 +235,7 @@ export const HomePage: React.FC = () => {
                 ''
               )}
             </div>
-          </Form.Item>
+          </Form.Item> */}
           <Form.Item
             name='from'
             label='From'
@@ -249,7 +261,7 @@ export const HomePage: React.FC = () => {
           >
             <Input />
           </Form.Item>
-          <Form.Item
+          {/* <Form.Item
             name='sender'
             label='Sender'
             rules={[
@@ -260,12 +272,12 @@ export const HomePage: React.FC = () => {
             ]}
           >
             <Input />
-          </Form.Item>
+          </Form.Item> */}
           <Form.Item name='text' label='Text'>
             <TextArea rows={4} />
           </Form.Item>
           <Form.Item
-            name='upload'
+            name='html'
             label='HTML'
             valuePropName='fileList'
             getValueFromEvent={(e) => {

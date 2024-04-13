@@ -22,7 +22,7 @@ export const sendMail = async (body: any) => {
   const formData = new FormData();
   const keys = Object.keys(body);
   for (const key of keys) {
-    if (key === 'files') {
+    if (key === 'files' && body[key]?.length) {
       for (const file of body[key]) {
         formData.append('files', file);
       }
