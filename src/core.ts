@@ -27,7 +27,11 @@ export const sendMail = async (body: any) => {
         formData.append('files', file);
       }
     } else {
-      formData.append(key, body[key]);
+      if (key === 'to') {
+        formData.append(key, JSON.stringify(body[key]));
+      } else {
+        formData.append(key, body[key]);
+      }
     }
   }
   const res = await httpClient.post('/mails', formData, {

@@ -120,6 +120,7 @@ export const HomePage: React.FC = () => {
         files: values.files?.fileList?.map((file: any) => file.originFileObj),
         html,
       };
+      console.log(toValue);
       if (toValue?.length) {
         res.to = toValue.split(',\n');
       }
