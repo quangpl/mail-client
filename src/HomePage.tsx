@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { HomeOutlined, MailOutlined, UploadOutlined } from '@ant-design/icons';
-import { Col, MenuProps, Popover, Row } from 'antd';
+import { Alert, Col, MenuProps, Popover, Progress, Row, Spin, Tag } from 'antd';
 import {
   Button,
   Form,
@@ -16,6 +16,7 @@ import { getAuth, getMails, sendMail } from './core';
 import { useHistory } from 'react-router';
 import * as XLSX from 'xlsx';
 import MailIcon from './mail.png';
+import { useInterval } from 'usehooks-ts';
 const { Header, Content, Footer, Sider } = Layout;
 const { TextArea } = Input;
 const { Dragger } = Upload;
@@ -61,6 +62,15 @@ export const HomePage: React.FC = () => {
       setLoading(false);
     }
   };
+  useInterval(() => {
+    const inProgress = emails.find(
+      (email: any) => email.progress < 100 && !email.error
+    );
+    if (inProgress) {
+      console.log('reload');
+      fetchMails();
+    }
+  }, 1000);
   useEffect(() => {
     (async () => {
       const auth = await getAuth();
@@ -73,7 +83,7 @@ export const HomePage: React.FC = () => {
   }, []);
 
   const handleFileRead = async (file: any) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (event: any) => {
         resolve(event.target?.result);
@@ -86,7 +96,13 @@ export const HomePage: React.FC = () => {
     {
       title: 'To',
       dataIndex: 'to',
-      key: 'to',
+      render: (val: string[]) => {
+        return (
+          <Popover content={<span> {val.join(',')}</span>}>
+            <Tag color='blue'>{val.length} email</Tag>
+          </Popover>
+        );
+      },
     },
     {
       title: 'From',
@@ -94,19 +110,50 @@ export const HomePage: React.FC = () => {
       key: 'from',
     },
     {
-      title: 'Sender',
-      dataIndex: 'sender',
-      key: 'sender',
-    },
-    {
       title: 'Subject',
       dataIndex: 'subject',
       key: 'subject',
     },
     {
+      title: 'Progress',
+      dataIndex: 'progress',
+      key: 'progress',
+      render: (val: number, col: any) => {
+        return (
+          <div>
+            <Progress
+              size={'small'}
+              status={
+                col.progress === 100 && !!col.error
+                  ? 'exception'
+                  : col.progress === 100 && !col.error
+                  ? 'success'
+                  : 'active'
+              }
+              showInfo
+              type='circle'
+              percent={val}
+            />
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Message',
+      dataIndex: 'error',
+      key: 'error',
+      render: (val: string) => {
+        return val ? (
+          <Alert message={val} type='error' />
+        ) : (
+          <Alert message={'Sending'} type='info' />
+        );
+      },
+    },
+    {
       title: 'Time',
       dataIndex: 'time',
-      render: (col: any, val: number) => {
+      render: (col: any) => {
         return <span>{new Date(col).toLocaleString()}</span>;
       },
     },
@@ -114,13 +161,11 @@ export const HomePage: React.FC = () => {
   const onFinish = async (values: any) => {
     try {
       setSending(true);
-      values.to_files = undefined;
       const res = {
         ...values,
         files: values.files?.fileList?.map((file: any) => file.originFileObj),
         html,
       };
-      console.log(toValue);
       if (toValue?.length) {
         res.to = toValue.split(',\n');
       }
@@ -237,7 +282,7 @@ export const HomePage: React.FC = () => {
               )}
             </div>
           </Form.Item> */}
-          <Form.Item
+          {/* <Form.Item
             name='from'
             label='From'
             rules={[
@@ -248,7 +293,7 @@ export const HomePage: React.FC = () => {
             ]}
           >
             <Input />
-          </Form.Item>
+          </Form.Item> */}
 
           <Form.Item
             name='subject'
@@ -385,17 +430,27 @@ export const HomePage: React.FC = () => {
           </Popover>
         </Header>
         <Content style={{ margin: '0 16px' }}>
-          <Button
+          <div
             style={{
-              margin: 15,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignContent: 'center',
+              alignItems: 'center',
             }}
-            onClick={() => {
-              setShowEmail(true);
-            }}
-            icon={<MailOutlined />}
           >
-            New Email
-          </Button>
+            <Button
+              style={{
+                margin: 15,
+              }}
+              onClick={() => {
+                setShowEmail(true);
+              }}
+              icon={<MailOutlined />}
+            >
+              New Email
+            </Button>
+            <div>{loading && <Spin />}</div>
+          </div>
           <div
             style={{
               padding: 24,
@@ -404,11 +459,7 @@ export const HomePage: React.FC = () => {
               borderRadius: borderRadiusLG,
             }}
           >
-            <Table
-              loading={loading}
-              dataSource={emails}
-              columns={columns as any}
-            />
+            <Table dataSource={emails} columns={columns as any} />
           </div>
         </Content>
         <Footer style={{ textAlign: 'center' }}>
